@@ -1,21 +1,6 @@
-/*
- * Copyright (c) 2023 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.example.sports.ui
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -48,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -73,12 +60,19 @@ import com.example.sports.ui.theme.SportsTheme
 /**
  * Main composable that serves as container
  * which displays content according to [uiState] and [windowSize]
+ * [windowSize]: parameter for the current screen width of the  device running the app
  */
 @Composable
-fun SportsApp(
-) {
+fun SportsApp(windowSize: WindowWidthSizeClass) {
     val viewModel: SportsViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsState()
+
+    // conditional to change the SportsApp layout based on the screen's width
+    when (windowSize) {
+        WindowWidthSizeClass.Compact -> {}
+        WindowWidthSizeClass.Medium -> {}
+        WindowWidthSizeClass.Expanded -> {}
+    }
 
     Scaffold(
         topBar = {
@@ -342,7 +336,46 @@ private fun SportsDetail(
     }
 }
 
-@Preview
+/**
+ *  for expanded screens (list & detail)
+ */
+/*
+@Composable
+fun SportsListAndDetails(
+    uiState: SportsUiState,
+    viewModel: SportsViewModel,
+    modifier: Modifier = Modifier
+) {
+    Row(modifier = modifier) {
+        // displaying the sport list on the left
+        SportsList(
+            sports = uiState.sportsList,
+            onClick = {
+                viewModel.updateCurrentSport(it)
+                viewModel.navigateToDetailPage()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    top = dimensionResource(R.dimen.padding_medium),
+                    start = dimensionResource(R.dimen.padding_medium),
+                    end = dimensionResource(R.dimen.padding_medium),
+                )
+        )
+
+        // getting the activity to use to kill the app once the user hits the back button
+        val activity = LocalContext.current as Activity
+        // the detail of one sport item on the right
+        SportsDetail(
+            selectedSport = uiState.currentSport,
+            contentPadding = PaddingValues(0.dp),
+            onBackPressed = { activity.finish() }
+        )
+    }
+}
+ */
+
+@Preview // one sport item
 @Composable
 fun SportsListItemPreview() {
     SportsTheme {
@@ -353,7 +386,7 @@ fun SportsListItemPreview() {
     }
 }
 
-@Preview
+@Preview // list preview
 @Composable
 fun SportsListPreview() {
     SportsTheme {
@@ -365,3 +398,14 @@ fun SportsListPreview() {
         }
     }
 }
+/*
+@Preview // list & detail preview
+@Composable
+fun SportsListAndDetailsPreview() {
+    SportsTheme {
+        Surface {
+            // TODO
+        }
+    }
+}
+*/
