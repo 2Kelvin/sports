@@ -56,6 +56,7 @@ import com.example.sports.R
 import com.example.sports.data.LocalSportsDataProvider
 import com.example.sports.model.Sport
 import com.example.sports.ui.theme.SportsTheme
+import com.example.sports.utils.SportsContentLayoutType
 
 /**
  * Main composable that serves as container
@@ -67,11 +68,14 @@ fun SportsApp(windowSize: WindowWidthSizeClass) {
     val viewModel: SportsViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsState()
 
-    // conditional to change the SportsApp layout based on the screen's width
+    // content layout to be displayed depending on the window size
+    val contentLayoutType: SportsContentLayoutType
+
+    // conditional to change the SportsApp content layout based on the screen's width (window size)
     when (windowSize) {
-        WindowWidthSizeClass.Compact -> {}
-        WindowWidthSizeClass.Medium -> {}
-        WindowWidthSizeClass.Expanded -> {}
+        WindowWidthSizeClass.Compact -> { contentLayoutType = SportsContentLayoutType.ListOnly }
+        WindowWidthSizeClass.Medium -> { contentLayoutType = SportsContentLayoutType.ListOnly }
+        WindowWidthSizeClass.Expanded -> { contentLayoutType = SportsContentLayoutType.ListAndDetail }
     }
 
     Scaffold(
@@ -152,10 +156,7 @@ fun SportsAppBar(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SportsListItem(
-    sport: Sport,
-    onItemClick: (Sport) -> Unit,
-    modifier: Modifier = Modifier
+private fun SportsListItem(sport: Sport, onItemClick: (Sport) -> Unit, modifier: Modifier = Modifier
 ) {
     Card(
         elevation = CardDefaults.cardElevation(),
