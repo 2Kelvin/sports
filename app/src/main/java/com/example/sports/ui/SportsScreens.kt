@@ -1,6 +1,5 @@
 package com.example.sports.ui
 
-import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -42,13 +41,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -60,22 +59,19 @@ import com.example.sports.utils.SportsContentLayoutType
 
 /**
  * Main composable that serves as container
- * which displays content according to [uiState] and [windowSize]
+ * which displays content according to uiState and [windowSize]
  * [windowSize]: parameter for the current screen width of the  device running the app
  */
 @Composable
-fun SportsApp(windowSize: WindowWidthSizeClass) {
+fun SportsApp(windowSize: WindowWidthSizeClass, onBackPressed: () -> Unit) {
     val viewModel: SportsViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsState()
-
     // content layout to be displayed depending on the window size
-    val contentLayoutType: SportsContentLayoutType
-
+    val contentLayoutType = when (windowSize) {
     // conditional to change the SportsApp content layout based on the screen's width (window size)
-    when (windowSize) {
-        WindowWidthSizeClass.Compact -> { contentLayoutType = SportsContentLayoutType.ListOnly }
-        WindowWidthSizeClass.Medium -> { contentLayoutType = SportsContentLayoutType.ListOnly }
-        WindowWidthSizeClass.Expanded -> { contentLayoutType = SportsContentLayoutType.ListAndDetail }
+        WindowWidthSizeClass.Compact, WindowWidthSizeClass.Medium -> SportsContentLayoutType.ListOnly
+        WindowWidthSizeClass.Expanded -> SportsContentLayoutType.ListAndDetail
+        else -> SportsContentLayoutType.ListOnly
     }
 
     Scaffold(
@@ -86,30 +82,42 @@ fun SportsApp(windowSize: WindowWidthSizeClass) {
             )
         }
     ) { innerPadding ->
-        if (uiState.isShowingListPage) {
-            SportsList(
+        // display SportsListAndDetails composable if the windowSize is large (expanded)
+        if (contentLayoutType == SportsContentLayoutType.ListAndDetail) {
+            SportsListAndDetails(
                 sports = uiState.sportsList,
-                onClick = {
-                    viewModel.updateCurrentSport(it)
-                    viewModel.navigateToDetailPage()
-                },
-                contentPadding = innerPadding,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        top = dimensionResource(R.dimen.padding_medium),
-                        start = dimensionResource(R.dimen.padding_medium),
-                        end = dimensionResource(R.dimen.padding_medium),
-                    )
-            )
-        } else {
-            SportsDetail(
                 selectedSport = uiState.currentSport,
+                onClick = { viewModel.updateCurrentSport(it) },
+                onBackPressed = onBackPressed,
                 contentPadding = innerPadding,
-                onBackPressed = {
-                    viewModel.navigateToListPage()
-                }
+                modifier = Modifier.fillMaxWidth()
             )
+        } else { // else display the normal compact view for smaller screens
+            if (uiState.isShowingListPage) {
+                SportsList(
+                    sports = uiState.sportsList,
+                    onClick = {
+                        viewModel.updateCurrentSport(it)
+                        viewModel.navigateToDetailPage()
+                    },
+                    contentPadding = innerPadding,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            top = dimensionResource(R.dimen.padding_medium),
+                            start = dimensionResource(R.dimen.padding_medium),
+                            end = dimensionResource(R.dimen.padding_medium),
+                        )
+                )
+            } else {
+                SportsDetail(
+                    selectedSport = uiState.currentSport,
+                    contentPadding = innerPadding,
+                    onBackPressed = {
+                        viewModel.navigateToListPage()
+                    }
+                )
+            }
         }
     }
 }
@@ -337,44 +345,35 @@ private fun SportsDetail(
     }
 }
 
-/**
- *  for expanded screens (list & detail)
- */
-/*
+/* for expanded screens (list & detail) */
 @Composable
 fun SportsListAndDetails(
-    uiState: SportsUiState,
-    viewModel: SportsViewModel,
-    modifier: Modifier = Modifier
+    sports: List<Sport>,
+    selectedSport: Sport,
+    onClick: (Sport) -> Unit,
+    onBackPressed: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     Row(modifier = modifier) {
         // displaying the sport list on the left
         SportsList(
-            sports = uiState.sportsList,
-            onClick = {
-                viewModel.updateCurrentSport(it)
-                viewModel.navigateToDetailPage()
-            },
+            sports = sports,
+            onClick = onClick,
+            contentPadding = PaddingValues(top = contentPadding.calculateTopPadding()),
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    top = dimensionResource(R.dimen.padding_medium),
-                    start = dimensionResource(R.dimen.padding_medium),
-                    end = dimensionResource(R.dimen.padding_medium),
-                )
+                .weight(1f) // take half the screen space
+                .padding(horizontal = dimensionResource(R.dimen.padding_medium))
         )
-
-        // getting the activity to use to kill the app once the user hits the back button
-        val activity = LocalContext.current as Activity
-        // the detail of one sport item on the right
+        // displaying sport details on the right
         SportsDetail(
-            selectedSport = uiState.currentSport,
-            contentPadding = PaddingValues(0.dp),
-            onBackPressed = { activity.finish() }
+            selectedSport = selectedSport,
+            contentPadding = PaddingValues(top = contentPadding.calculateTopPadding()),
+            onBackPressed = onBackPressed,
+            modifier = Modifier.weight(1f) // take half the screen space
         )
     }
 }
- */
 
 @Preview // one sport item
 @Composable
@@ -399,14 +398,20 @@ fun SportsListPreview() {
         }
     }
 }
-/*
-@Preview // list & detail preview
+
+@Preview(device = Devices.TABLET) // list & detail preview
 @Composable
 fun SportsListAndDetailsPreview() {
     SportsTheme {
         Surface {
-            // TODO
+            SportsListAndDetails(
+                sports = LocalSportsDataProvider.getSportsData(),
+                selectedSport = LocalSportsDataProvider.getSportsData().getOrElse(0) {
+                    LocalSportsDataProvider.defaultSport
+                },
+                onClick = {},
+                onBackPressed = {},
+            )
         }
     }
 }
-*/
